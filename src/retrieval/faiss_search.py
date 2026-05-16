@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import time
+from functools import lru_cache
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -52,22 +53,29 @@ def load_sentence_model(manifest: dict) -> SentenceTransformer:
     return SentenceTransformer(model_source, device=detect_device(), local_files_only=local_only)
 
 
-def search(query: str, top_k: int, manifest_path: Path = DEFAULT_MANIFEST) -> pd.DataFrame:
-    manifest = load_manifest(manifest_path)
+@lru_cache(maxsize=2)
+def load_search_resources(manifest_path: str):
+    manifest = load_manifest(Path(manifest_path))
     metadata = pd.read_csv(manifest["metadata_path"], low_memory=False)
-
     model = load_sentence_model(manifest)
-    query_embedding = model.encode(
-        [query],
-        normalize_embeddings=bool(manifest.get("normalize_embeddings", True)),
-        convert_to_numpy=True,
-    ).astype("float32")
 
     # Import FAISS after SentenceTransformer loads. On this Mac setup,
     # loading FAISS first caused native crashes in a few test runs.
     import faiss
 
     index = faiss.read_index(manifest["index_path"])
+    return manifest, metadata, model, index
+
+
+def search(query: str, top_k: int, manifest_path: Path = DEFAULT_MANIFEST) -> pd.DataFrame:
+    manifest_path = resolve_path(manifest_path)
+    manifest, metadata, model, index = load_search_resources(str(manifest_path))
+    query_embedding = model.encode(
+        [query],
+        normalize_embeddings=bool(manifest.get("normalize_embeddings", True)),
+        convert_to_numpy=True,
+    ).astype("float32")
+
     start = time.perf_counter()
     scores, indices = index.search(query_embedding, top_k)
     search_ms = (time.perf_counter() - start) * 1000

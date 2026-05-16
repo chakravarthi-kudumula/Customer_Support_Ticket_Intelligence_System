@@ -295,3 +295,31 @@ artifacts/reports/phase6_summary_examples.csv
 artifacts/reports/phase6_summarization_report.md
 notebooks/06_complaint_summarization.ipynb
 ```
+
+## Phase 7: RAG-Style Retrieval
+
+This phase builds a retrieval-grounded assistant without a paid LLM. It retrieves similar complaints, builds a small context, adds confidence, and cites complaint IDs.
+
+Run the example queries:
+
+```bash
+source ticket/bin/activate
+python -m src.pipelines.phase7_rag_examples
+```
+
+Ask one question:
+
+```bash
+python -m src.rag.retrieval_assistant --query "My bank charged me twice for the same transaction" --top-k 5
+```
+
+Phase 7 files:
+
+```text
+src/rag/context_builder.py
+src/rag/retrieval_assistant.py
+artifacts/reports/phase7_rag_examples.csv
+artifacts/reports/phase7_rag_answers.md
+artifacts/reports/phase7_rag_report.md
+notebooks/07_rag_retrieval_system.ipynb
+```
