@@ -1,0 +1,38 @@
+# Core data stack
+pandas
+numpy
+scikit-learn
+
+# NLP and deep learning
+torch
+transformers
+sentence-transformers
+datasets
+accelerate
+
+# Text processing and evaluation
+nltk
+spacy
+tqdm
+
+# Search, retrieval, and vector storage
+faiss-cpu
+
+# API and app layer
+fastapi
+uvicorn
+streamlit
+
+# Experiment tracking and configuration
+mlflow
+pyyaml
+python-dotenv
+
+# Notebooks and development
+jupyter
+ipykernel
+pytest
+black
+ruff
+matplotlib
+seaborn

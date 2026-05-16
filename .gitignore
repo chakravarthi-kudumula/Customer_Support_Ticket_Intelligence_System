@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+ticket/
+.venv/
+venv/
+
+# Environment files
+.env
+
+# Data and generated artifacts
+data/raw/*
+data/processed/*
+artifacts/
+mlruns/
+
+# Keep directory placeholders
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!mlruns/.gitkeep
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+
