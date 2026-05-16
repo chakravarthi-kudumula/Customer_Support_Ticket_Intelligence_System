@@ -1,4 +1,4 @@
-"""Phase 6 pipeline: generate executive summaries for long complaints."""
+"""Phase 6 pipeline: summarize long complaints."""
 
 import argparse
 from pathlib import Path
@@ -69,7 +69,7 @@ def write_report(path: Path, results: pd.DataFrame, model_name: str, min_words: 
     lines = [
         "# Phase 6 Summarization Report",
         "",
-        "This phase uses a pretrained sequence-to-sequence transformer to generate short executive summaries for long complaint narratives.",
+        "Uses a pretrained seq2seq model to shorten long complaint narratives.",
         "",
         "## Setup",
         "",
@@ -83,9 +83,9 @@ def write_report(path: Path, results: pd.DataFrame, model_name: str, min_words: 
         "",
         "## Notes",
         "",
-        "- CFPB does not provide gold human summaries, so this is zero-shot summarization, not supervised fine-tuning.",
-        "- Summaries should be reviewed for factual faithfulness before being used in a production support workflow.",
-        "- Longer complaints may be truncated to fit the model context window.",
+        "- CFPB does not include target summaries, so this step uses the pretrained model as-is.",
+        "- Review summaries before using them in any customer-facing workflow.",
+        "- Very long complaints may be truncated to fit the model context window.",
     ]
     path.write_text("\n".join(lines), encoding="utf-8")
 

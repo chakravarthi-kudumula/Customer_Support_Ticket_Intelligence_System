@@ -63,8 +63,8 @@ def search(query: str, top_k: int, manifest_path: Path = DEFAULT_MANIFEST) -> pd
         convert_to_numpy=True,
     ).astype("float32")
 
-    # On Apple Silicon, importing FAISS before SentenceTransformer model loading can
-    # crash the process in some local environments. Keep FAISS lazy and late.
+    # Import FAISS after SentenceTransformer loads. On this Mac setup,
+    # loading FAISS first caused native crashes in a few test runs.
     import faiss
 
     index = faiss.read_index(manifest["index_path"])

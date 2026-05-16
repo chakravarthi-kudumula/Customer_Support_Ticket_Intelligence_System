@@ -1,16 +1,16 @@
 # Customer Support Ticket Intelligence System
 
-Enterprise-grade NLP intelligence system for Consumer Financial Protection Bureau complaint data.
+NLP project for working with Consumer Financial Protection Bureau complaint data.
 
 ## Project Vision
 
-This project will evolve through staged phases into a system that can:
+The goal is to build this step by step into a system that can:
 
 - classify customer complaints
 - retrieve semantically similar complaints
 - summarize complaint narratives
 - support intelligent search
-- optionally power a RAG-style assistant
+- optionally support a RAG-style assistant
 
 ## Phase Roadmap
 
@@ -70,13 +70,13 @@ pip install -r requirements.txt
 
 ## Dataset Placement
 
-Place the downloaded CFPB CSV file in:
+Put the downloaded CFPB CSV file here:
 
 ```text
 data/raw/
 ```
 
-The default config expects:
+The default config looks for:
 
 ```text
 data/raw/complaints.csv
@@ -84,14 +84,14 @@ data/raw/complaints.csv
 
 ## Balanced Sample
 
-Create a random balanced 90k-row sample with 15k complaint narratives per target product:
+To create a balanced 90k-row sample with 15k complaint narratives per product:
 
 ```bash
 source ticket/bin/activate
 python -m src.data.create_balanced_sample
 ```
 
-The sampled file is written to:
+The sample is saved here:
 
 ```text
 data/processed/cfpb_sample_90k.csv
@@ -99,26 +99,26 @@ data/processed/cfpb_sample_90k.csv
 
 ## Phase 1: NLP EDA + Preprocessing
 
-Generate the cleaned dataset with both transformer-safe and classical-ML text columns:
+To create the cleaned dataset with text columns for transformers and baseline ML:
 
 ```bash
 source ticket/bin/activate
 python -m src.preprocessing.build_preprocessed_dataset
 ```
 
-Generate the EDA report and figures:
+To create the EDA report and charts:
 
 ```bash
 python -m src.data.phase1_eda_report
 ```
 
-Open the notebook:
+Notebook:
 
 ```text
 notebooks/01_nlp_eda_preprocessing.ipynb
 ```
 
-Phase 1 outputs:
+Phase 1 files:
 
 ```text
 data/processed/cfpb_sample_90k_clean.csv
@@ -128,25 +128,25 @@ artifacts/figures/
 
 ## Phase Pipelines
 
-End-to-end phase workflows live in:
+Phase scripts live here:
 
 ```text
 src/pipelines/
 ```
 
-Run Phase 0 balanced sampling:
+Phase 0 sampling:
 
 ```bash
 python -m src.pipelines.phase0_create_sample
 ```
 
-Run Phase 1 preprocessing and EDA:
+Phase 1 preprocessing and EDA:
 
 ```bash
 python -m src.pipelines.phase1_preprocess_and_eda
 ```
 
-Phase 2 has a pipeline scaffold ready at:
+Phase 2 script:
 
 ```text
 src/pipelines/phase2_train_baselines.py
@@ -154,14 +154,14 @@ src/pipelines/phase2_train_baselines.py
 
 ## Phase 2: Baseline Models
 
-Train and evaluate traditional NLP classifiers:
+To train and evaluate the baseline NLP models:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase2_train_baselines
 ```
 
-Phase 2 outputs:
+Phase 2 files:
 
 ```text
 artifacts/models/*.joblib
@@ -175,28 +175,28 @@ notebooks/02_baseline_models.ipynb
 
 ## Phase 3: Transformer Fine-Tuning
 
-Fine-tune DistilBERT for complaint classification. On this machine, MPS acceleration is available when running outside the restricted sandbox.
+Fine-tune DistilBERT for complaint classification. On this machine, MPS can be used when the run has normal local access.
 
-Pilot run used for the current artifacts:
+Pilot run used for the current saved results:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase3_finetune_transformer --max-samples-per-class 1000 --epochs 1 --train-batch-size 8 --eval-batch-size 16
 ```
 
-BERT pilot comparison, using smaller batches because BERT is larger:
+BERT pilot run, with smaller batches because BERT is larger:
 
 ```bash
 python -m src.pipelines.phase3_finetune_transformer --model-name bert-base-uncased --max-samples-per-class 1000 --epochs 1 --train-batch-size 4 --eval-batch-size 8
 ```
 
-Full 90k-row DistilBERT run when you want the proper baseline comparison:
+Full 90k-row DistilBERT run for a fairer comparison with the baseline models:
 
 ```bash
 python -m src.pipelines.phase3_finetune_transformer --full-dataset --epochs 2 --train-batch-size 8 --eval-batch-size 16
 ```
 
-Phase 3 outputs:
+Phase 3 files:
 
 ```text
 artifacts/models/distilbert_complaint_classifier/
@@ -212,20 +212,20 @@ notebooks/03_transformer_finetuning.ipynb
 
 ## Phase 4: Embeddings + Semantic Search
 
-Build SBERT embeddings for semantic complaint retrieval:
+To build SBERT embeddings for complaint search:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase4_build_embeddings --full-dataset --batch-size 64
 ```
 
-Run a semantic search query with the NumPy baseline retriever:
+Search with the NumPy version:
 
 ```bash
 python -m src.retrieval.semantic_search --query "My account was charged twice" --top-k 5
 ```
 
-Phase 4 outputs:
+Phase 4 files:
 
 ```text
 artifacts/embeddings/complaint_embeddings_all_minilm_l6_v2_full.npy
@@ -237,26 +237,26 @@ notebooks/04_embeddings_semantic_search.ipynb
 
 ## Phase 5: Vector Database System
 
-Build a FAISS vector index over the full 90k SBERT embeddings and benchmark it against the NumPy baseline:
+To build the FAISS index for the full 90k SBERT embeddings and compare it with NumPy search:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase5_build_vector_index
 ```
 
-Run semantic search through FAISS:
+Search with FAISS:
 
 ```bash
 python -m src.retrieval.faiss_search --query "My account was charged twice" --top-k 5
 ```
 
-Build an approximate HNSW index when scaling beyond the current 90k rows:
+Optional: build an approximate HNSW index for larger datasets:
 
 ```bash
 python -m src.retrieval.faiss_vector_store --index-type hnsw_ip
 ```
 
-Phase 5 outputs:
+Phase 5 files:
 
 ```text
 artifacts/vector_indexes/faiss_flat_ip_all_minilm_l6_v2_full.index
@@ -268,7 +268,7 @@ notebooks/05_vector_database_faiss.ipynb
 
 ## Phase 6: Summarization
 
-Generate executive summaries for long complaint narratives with a pretrained sequence-to-sequence transformer:
+To summarize long complaint narratives with a pretrained seq2seq model:
 
 ```bash
 source ticket/bin/activate
@@ -287,7 +287,7 @@ Summarize custom text:
 python -m src.summarization.complaint_summarizer --text "My bank charged me twice and has not refunded the duplicate charge." --local-files-only
 ```
 
-Phase 6 outputs:
+Phase 6 files:
 
 ```text
 artifacts/summarization/models/

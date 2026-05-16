@@ -126,7 +126,7 @@ def write_markdown_report(report_path: Path, rows: list[dict], faiss_manifest: d
     lines = [
         "# Phase 5 Vector Database Benchmark",
         "",
-        "FAISS is now the vector search layer for complaint embeddings.",
+        "FAISS is used here as the vector search index for complaint embeddings.",
         "",
         "## Index",
         "",
@@ -141,8 +141,8 @@ def write_markdown_report(report_path: Path, rows: list[dict], faiss_manifest: d
         "",
         markdown_table(df),
         "",
-        "For normalized SBERT embeddings, FAISS inner product scores are cosine similarities.",
-        "`flat_ip` is exact search, so it should match NumPy top-k results while avoiding a manual full matrix scan in application code.",
+        "For normalized SBERT embeddings, FAISS inner product scores match cosine similarity.",
+        "`flat_ip` is exact search, so it should return the same top-k results as NumPy while keeping search logic inside FAISS.",
     ]
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -167,8 +167,8 @@ def run_benchmark(
         convert_to_numpy=True,
     ).astype("float32")
 
-    # Keep FAISS import after SentenceTransformer loading to avoid local Apple
-    # Silicon crashes seen when FAISS initializes first.
+    # Import FAISS after SentenceTransformer loads. On this Mac setup,
+    # loading FAISS first caused native crashes in a few test runs.
     import faiss
 
     index = faiss.read_index(faiss_manifest["index_path"])

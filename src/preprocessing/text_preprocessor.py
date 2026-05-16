@@ -63,7 +63,7 @@ def clean_for_classical_ml(value: object, remove_stopwords: bool = True) -> str:
 
 
 def add_text_features(df: pd.DataFrame, columns: TextColumns | None = None) -> pd.DataFrame:
-    """Add raw, transformer, classical-ML, and length-analysis columns."""
+    """Add the text and length columns used by later phases."""
     columns = columns or TextColumns()
     output = df.copy()
 

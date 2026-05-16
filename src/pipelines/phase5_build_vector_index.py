@@ -1,4 +1,4 @@
-"""Phase 5 pipeline: build and benchmark a FAISS vector index."""
+"""Phase 5 pipeline: build and check the FAISS index."""
 
 from src.retrieval.faiss_vector_store import FaissIndexConfig, build_faiss_index
 from src.retrieval.vector_index_benchmark import run_benchmark
