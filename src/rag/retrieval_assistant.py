@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -11,6 +12,14 @@ from src.utils.config import project_path
 
 
 DEFAULT_REPORT_DIR = project_path("artifacts/reports")
+DEFAULT_CLEAN_DATA_PATH = project_path("data/processed/cfpb_sample_90k_clean.csv")
+OUTCOME_COLUMNS = [
+    "Complaint ID",
+    "Company response to consumer",
+    "Timely response?",
+    "Consumer disputed?",
+    "Company public response",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,6 +44,34 @@ def format_list(values: list[str]) -> str:
     return ", ".join(clean)
 
 
+@lru_cache(maxsize=1)
+def load_outcome_metadata(clean_data_path: str = str(DEFAULT_CLEAN_DATA_PATH)) -> pd.DataFrame:
+    path = Path(clean_data_path)
+    if not path.exists():
+        return pd.DataFrame(columns=OUTCOME_COLUMNS)
+    outcomes = pd.read_csv(path, usecols=lambda col: col in OUTCOME_COLUMNS, low_memory=False)
+    outcomes["Complaint ID"] = outcomes["Complaint ID"].astype(str)
+    return outcomes
+
+
+def add_outcome_metadata(results: pd.DataFrame) -> pd.DataFrame:
+    if results.empty or "Complaint ID" not in results.columns:
+        return results
+    outcomes = load_outcome_metadata()
+    if outcomes.empty:
+        return results
+    enriched = results.copy()
+    enriched["Complaint ID"] = enriched["Complaint ID"].astype(str)
+    return enriched.merge(outcomes, on="Complaint ID", how="left")
+
+
+def format_outcome_counts(values: list[str]) -> str:
+    clean = [value for value in values if value]
+    if not clean:
+        return "not available in the retrieved complaints"
+    return ", ".join(clean)
+
+
 def build_answer(query: str, context: list[dict], summary: dict) -> str:
     if not context:
         return (
@@ -52,6 +89,11 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
         f"- CFPB issue labels: {format_list(summary['issues'])}",
         f"- Companies seen in the retrieved set: {format_list(summary['companies'])}",
         "",
+        "How similar complaints were handled:",
+        f"- Company responses: {format_outcome_counts(summary['company_responses'])}",
+        f"- Timely response values: {format_outcome_counts(summary['timely_responses'])}",
+        f"- Consumer disputed values: {format_outcome_counts(summary['consumer_disputed'])}",
+        "",
         "Relevant complaint evidence:",
     ]
 
@@ -63,6 +105,7 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
                     f"({item['product']} | {item['issue']} | similarity {item['similarity']:.4f})"
                 ),
                 f"  {item['snippet']}",
+                f"  Outcome: {item['company_response'] or 'not available'}; timely response: {item['timely_response'] or 'not available'}",
             ]
         )
 
@@ -73,8 +116,9 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
             (
                 "Based on the retrieved CFPB complaints, this query is most closely related to "
                 f"{format_list(summary['products'])}. The CFPB issue labels in the retrieved set are "
-                f"{format_list(summary['issues'])}. The answer is grounded only in the complaints "
-                f"listed above; it should not be treated as legal or financial advice."
+                f"{format_list(summary['issues'])}. In similar complaints, company responses were "
+                f"{format_outcome_counts(summary['company_responses'])}. The answer is grounded only "
+                f"in the complaints listed above; it should not be treated as legal or financial advice."
             ),
             "",
             f"Citations: {', '.join(summary['complaint_ids'])}",
@@ -90,6 +134,7 @@ def answer_query(
     context_config: ContextConfig = ContextConfig(),
 ) -> dict:
     results = search(query=query, top_k=top_k, manifest_path=manifest_path)
+    results = add_outcome_metadata(results)
     context = build_context(results, context_config)
     summary = summarize_context(context)
     answer = build_answer(query, context, summary)

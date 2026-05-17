@@ -49,6 +49,10 @@ def build_context(results: pd.DataFrame, config: ContextConfig = ContextConfig()
                 "issue": clean_text(row.get("Issue", "")),
                 "company": clean_text(row.get("Company", "")),
                 "state": clean_text(row.get("State", "")),
+                "company_response": clean_text(row.get("Company response to consumer", "")),
+                "timely_response": clean_text(row.get("Timely response?", "")),
+                "consumer_disputed": clean_text(row.get("Consumer disputed?", "")),
+                "public_response": clean_text(row.get("Company public response", "")),
                 "snippet": snippet_text(row.get("text_transformer", ""), config.max_snippet_chars),
             }
         )
@@ -64,6 +68,9 @@ def summarize_context(context: list[dict]) -> dict:
             "issues": [],
             "companies": [],
             "complaint_ids": [],
+            "company_responses": [],
+            "timely_responses": [],
+            "consumer_disputed": [],
         }
 
     frame = pd.DataFrame(context)
@@ -75,4 +82,7 @@ def summarize_context(context: list[dict]) -> dict:
         "issues": frame["issue"].value_counts().head(3).index.tolist(),
         "companies": frame["company"].value_counts().head(3).index.tolist(),
         "complaint_ids": frame["complaint_id"].tolist(),
+        "company_responses": frame["company_response"].value_counts().head(3).index.tolist() if "company_response" in frame else [],
+        "timely_responses": frame["timely_response"].value_counts().head(3).index.tolist() if "timely_response" in frame else [],
+        "consumer_disputed": frame["consumer_disputed"].value_counts().head(3).index.tolist() if "consumer_disputed" in frame else [],
     }
