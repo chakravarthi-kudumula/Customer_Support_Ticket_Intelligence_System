@@ -47,9 +47,9 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
         "",
         f"Retrieval confidence: {summary['confidence']} (top similarity: {summary['top_score']:.4f})",
         "",
-        "What the similar complaints point to:",
+        "What the retrieved complaints show:",
         f"- Products: {format_list(summary['products'])}",
-        f"- Common issues: {format_list(summary['issues'])}",
+        f"- CFPB issue labels: {format_list(summary['issues'])}",
         f"- Companies seen in the retrieved set: {format_list(summary['companies'])}",
         "",
         "Relevant complaint evidence:",
@@ -72,7 +72,7 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
             "Answer:",
             (
                 "Based on the retrieved CFPB complaints, this query is most closely related to "
-                f"{format_list(summary['products'])}. The recurring issue themes are "
+                f"{format_list(summary['products'])}. The CFPB issue labels in the retrieved set are "
                 f"{format_list(summary['issues'])}. The answer is grounded only in the complaints "
                 f"listed above; it should not be treated as legal or financial advice."
             ),
