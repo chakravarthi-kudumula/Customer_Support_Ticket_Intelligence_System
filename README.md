@@ -377,6 +377,8 @@ notebooks/08_fastapi_deployment.ipynb
 
 ## Demo UI
 
+![Streamlit demo](docs/images/streamlit-demo.png)
+
 Start the FastAPI backend:
 
 ```bash
