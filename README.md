@@ -330,3 +330,47 @@ artifacts/reports/phase7_rag_answers.md
 artifacts/reports/phase7_rag_report.md
 notebooks/07_rag_retrieval_system.ipynb
 ```
+
+## Phase 8: FastAPI Deployment
+
+Run the API locally:
+
+```bash
+source ticket/bin/activate
+uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open the API docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+Main endpoints:
+
+```text
+GET  /health
+GET  /metadata
+POST /classify
+POST /search
+POST /rag
+POST /summarize
+POST /analyze
+```
+
+Example request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/rag \
+  -H "Content-Type: application/json" \
+  -d '{"query":"My account was charged twice","top_k":3,"filters":{"product":"Checking or savings account"}}'
+```
+
+Phase 8 files:
+
+```text
+src/api/main.py
+src/api/schemas.py
+src/api/services.py
+notebooks/08_fastapi_deployment.ipynb
+```
