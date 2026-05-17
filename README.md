@@ -374,3 +374,27 @@ src/api/schemas.py
 src/api/services.py
 notebooks/08_fastapi_deployment.ipynb
 ```
+
+## Demo UI
+
+Start the FastAPI backend:
+
+```bash
+source ticket/bin/activate
+uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+```
+
+In another terminal, start the Streamlit UI:
+
+```bash
+source ticket/bin/activate
+streamlit run app/streamlit_app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false
+```
+
+Open:
+
+```text
+http://127.0.0.1:8501
+```
+
+The UI calls the API and supports classification, semantic search, retrieval-grounded answers, summarization, metadata filters, and combined analysis.
