@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -20,6 +21,32 @@ OUTCOME_COLUMNS = [
     "Consumer disputed?",
     "Company public response",
 ]
+FILTER_COLUMNS = {
+    "product": "Product",
+    "company": "Company",
+    "issue": "Issue",
+    "state": "State",
+}
+
+
+@dataclass(frozen=True)
+class RetrievalFilters:
+    product: str | None = None
+    company: str | None = None
+    issue: str | None = None
+    state: str | None = None
+
+    def active(self) -> dict[str, str]:
+        return {
+            key: value
+            for key, value in {
+                "product": self.product,
+                "company": self.company,
+                "issue": self.issue,
+                "state": self.state,
+            }.items()
+            if value
+        }
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,6 +56,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--max-snippet-chars", type=int, default=700)
     parser.add_argument("--min-similarity", type=float, default=0.35)
+    parser.add_argument("--product", default=None, help="Optional product filter, e.g. 'Debt collection'.")
+    parser.add_argument("--company", default=None, help="Optional company filter, e.g. 'ENCORE CAPITAL GROUP INC.'.")
+    parser.add_argument("--issue", default=None, help="Optional CFPB issue filter.")
+    parser.add_argument("--state", default=None, help="Optional two-letter state filter.")
+    parser.add_argument("--fetch-k", type=int, default=100, help="How many semantic matches to fetch before applying filters.")
     parser.add_argument("--output", type=Path, default=None)
     return parser.parse_args()
 
@@ -72,7 +104,51 @@ def format_outcome_counts(values: list[str]) -> str:
     return ", ".join(clean)
 
 
-def build_answer(query: str, context: list[dict], summary: dict) -> str:
+def normalize_for_filter(value: object) -> str:
+    return str(value or "").strip().casefold()
+
+
+def apply_metadata_filters(results: pd.DataFrame, filters: RetrievalFilters) -> tuple[pd.DataFrame, dict]:
+    active_filters = filters.active()
+    stats = {
+        "active_filters": active_filters,
+        "candidate_count": int(len(results)),
+        "matched_count": int(len(results)),
+        "filter_applied": bool(active_filters),
+    }
+    if not active_filters or results.empty:
+        return results, stats
+
+    mask = pd.Series(True, index=results.index)
+    for filter_name, filter_value in active_filters.items():
+        column = FILTER_COLUMNS[filter_name]
+        if column not in results.columns:
+            mask &= False
+            continue
+        wanted = normalize_for_filter(filter_value)
+        values = results[column].fillna("").astype(str).str.strip().str.casefold()
+        if filter_name == "state":
+            mask &= values == wanted
+        else:
+            mask &= values.str.contains(wanted, regex=False)
+
+    filtered = results[mask].copy()
+    stats["matched_count"] = int(len(filtered))
+    return filtered, stats
+
+
+def describe_filters(stats: dict) -> str:
+    active_filters = stats.get("active_filters", {})
+    if not active_filters:
+        return "No metadata filters applied."
+    parts = [f"{key}={value}" for key, value in active_filters.items()]
+    return (
+        f"Applied filters: {', '.join(parts)} "
+        f"({stats.get('matched_count', 0)} of {stats.get('candidate_count', 0)} fetched matches kept)."
+    )
+
+
+def build_answer(query: str, context: list[dict], summary: dict, filter_stats: dict | None = None) -> str:
     if not context:
         return (
             "I could not find closely related complaints in the current index. "
@@ -83,6 +159,7 @@ def build_answer(query: str, context: list[dict], summary: dict) -> str:
         f"Query: {query}",
         "",
         f"Retrieval confidence: {summary['confidence']} (top similarity: {summary['top_score']:.4f})",
+        describe_filters(filter_stats or {}),
         "",
         "What the retrieved complaints show:",
         f"- Products: {format_list(summary['products'])}",
@@ -132,12 +209,19 @@ def answer_query(
     top_k: int = 5,
     manifest_path: Path = DEFAULT_MANIFEST,
     context_config: ContextConfig = ContextConfig(),
+    filters: RetrievalFilters = RetrievalFilters(),
+    fetch_k: int = 100,
 ) -> dict:
-    results = search(query=query, top_k=top_k, manifest_path=manifest_path)
+    fetch_count = max(top_k, fetch_k if filters.active() else top_k)
+    results = search(query=query, top_k=fetch_count, manifest_path=manifest_path)
+    results, filter_stats = apply_metadata_filters(results, filters)
+    results = results.head(top_k).copy()
+    if not results.empty:
+        results["rank"] = range(1, len(results) + 1)
     results = add_outcome_metadata(results)
     context = build_context(results, context_config)
     summary = summarize_context(context)
-    answer = build_answer(query, context, summary)
+    answer = build_answer(query, context, summary, filter_stats)
     return {
         "query": query,
         "answer": answer,
@@ -145,6 +229,7 @@ def answer_query(
         "top_score": summary["top_score"],
         "citations": summary["complaint_ids"],
         "retrieved_count": len(context),
+        "filters": filter_stats,
         "results": results,
         "context": context,
     }
@@ -158,6 +243,7 @@ def save_result_csv(result: dict, output_path: Path) -> None:
                 "query": result["query"],
                 "confidence": result["confidence"],
                 "top_score": result["top_score"],
+                "filters": describe_filters(result.get("filters", {})),
                 **item,
             }
         )
@@ -176,6 +262,13 @@ def main() -> None:
             max_snippet_chars=args.max_snippet_chars,
             min_similarity=args.min_similarity,
         ),
+        filters=RetrievalFilters(
+            product=args.product,
+            company=args.company,
+            issue=args.issue,
+            state=args.state,
+        ),
+        fetch_k=args.fetch_k,
     )
     print(result["answer"])
     if args.output:

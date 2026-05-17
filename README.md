@@ -313,6 +313,13 @@ Ask one question:
 python -m src.rag.retrieval_assistant --query "My bank charged me twice for the same transaction" --top-k 5
 ```
 
+Use metadata filters when the product, company, issue, or state is already known:
+
+```bash
+python -m src.rag.retrieval_assistant --query "My account was charged twice" --product "Checking or savings account" --top-k 5
+python -m src.rag.retrieval_assistant --query "Debt collector keeps calling me" --company "ENCORE CAPITAL GROUP INC." --top-k 5
+```
+
 Phase 7 files:
 
 ```text
