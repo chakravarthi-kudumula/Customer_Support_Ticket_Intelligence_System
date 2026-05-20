@@ -29,6 +29,87 @@ This project will evolve through staged phases into a system that can:
 | 10 | MLflow + Experiment Tracking |
 | 11 | Advanced Improvements |
 
+## Project Workflow
+
+```mermaid
+flowchart TD
+    A["Raw CFPB Complaints CSV<br/>~1.1 GB"] --> B["Balanced Sampling<br/>15k rows per product<br/>6 products = 90k rows"]
+
+    B --> C["Phase 1: NLP EDA + Preprocessing"]
+    C --> C1["EDA<br/>product distribution<br/>issue distribution<br/>text length<br/>duplicates<br/>missing narratives"]
+    C --> C2["Preprocessing<br/>transformer-safe text<br/>classical ML cleaned text<br/>CFPB redaction handling"]
+
+    C2 --> D["Processed Dataset<br/>cfpb_sample_90k_clean.csv"]
+
+    D --> E["Phase 2: Baseline ML Classification"]
+    E --> E1["TF-IDF / Bag of Words"]
+    E1 --> E2["Logistic Regression<br/>Linear SVM<br/>Dummy Baseline"]
+    E2 --> E3["Metrics<br/>accuracy<br/>precision<br/>recall<br/>macro F1<br/>weighted F1"]
+    E3 --> E4["Best Baseline Model<br/>TF-IDF + Logistic Regression"]
+
+    D --> F["Phase 3: Transformer Fine-Tuning"]
+    F --> F1["Tokenizer<br/>DistilBERT / BERT"]
+    F1 --> F2["Transformer Encoder"]
+    F2 --> F3["Classification Head"]
+    F3 --> F4["Complaint Product Prediction"]
+    F4 --> F5["Transformer Metrics + Reports"]
+
+    D --> G["Phase 4: Embeddings + Semantic Search"]
+    G --> G1["Sentence Transformer<br/>all-MiniLM-L6-v2"]
+    G1 --> G2["384-dim Complaint Embeddings"]
+    G2 --> G3["NumPy Cosine Similarity Search"]
+
+    G2 --> H["Phase 5: Vector Database"]
+    H --> H1["FAISS Index<br/>IndexFlatIP"]
+    H1 --> H2["Vector Search<br/>Query Embedding -> Top-K Similar Complaints"]
+    H2 --> H3["Retrieval Benchmark<br/>NumPy vs FAISS<br/>latency + overlap"]
+
+    D --> I["Phase 6: Summarization"]
+    I --> I1["Seq2Seq Transformer<br/>DistilBART"]
+    I1 --> I2["Long Complaint Narrative"]
+    I2 --> I3["Executive Summary"]
+
+    H2 --> J["Phase 7: Retrieval-Grounded Assistant"]
+    J --> J1["User Query"]
+    J1 --> J2["SBERT Query Embedding"]
+    J2 --> J3["FAISS Retrieval"]
+    J3 --> J4["Metadata Filters<br/>product<br/>company<br/>issue<br/>state"]
+    J4 --> J5["Context Builder"]
+    J5 --> J6["Extractive RAG-Style Answer<br/>citations<br/>confidence<br/>similar complaints<br/>company outcomes"]
+
+    E4 --> K["Phase 8: FastAPI Service"]
+    F4 --> K
+    H2 --> K
+    I3 --> K
+    J6 --> K
+
+    K --> K1["API Endpoints<br/>GET /health<br/>GET /metadata<br/>POST /classify<br/>POST /search<br/>POST /rag<br/>POST /summarize<br/>POST /analyze"]
+
+    K1 --> L["Streamlit UI"]
+    L --> L1["Analyze"]
+    L --> L2["Retrieval Answer"]
+    L --> L3["Search"]
+    L --> L4["Classify"]
+    L --> L5["Summarize"]
+
+    K --> M["Phase 9: Dockerization"]
+    L --> M
+    M --> M1["Dockerfile.api<br/>FastAPI backend"]
+    M --> M2["Dockerfile.ui<br/>Streamlit frontend"]
+    M --> M3["docker-compose.yml<br/>API + UI"]
+    M --> M4["Runtime Volume Mounts<br/>./artifacts -> /app/artifacts<br/>./data -> /app/data"]
+    M --> M5["CPU-only PyTorch<br/>reduced API image size"]
+
+    E3 --> N["Phase 10: MLflow Tracking"]
+    F5 --> N
+    H3 --> N
+    I3 --> N
+    J6 --> N
+    N --> N1["MLflow SQLite Backend<br/>mlflow.db"]
+    N --> N2["Artifact Store<br/>mlruns/"]
+    N --> N3["Tracked Items<br/>params<br/>metrics<br/>model artifacts<br/>reports"]
+```
+
 ## Setup
 
 Create and activate the virtual environment:
