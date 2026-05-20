@@ -1,16 +1,16 @@
 # Customer Support Ticket Intelligence System
 
-NLP project for working with Consumer Financial Protection Bureau complaint data.
+Enterprise-grade Deep Learning & NLP intelligence system for Consumer Financial Protection Bureau complaint data.
 
 ## Project Vision
 
-The goal is to build this step by step into a system that can:
+This project will evolve through staged phases into a system that can:
 
 - classify customer complaints
 - retrieve semantically similar complaints
 - summarize complaint narratives
 - support intelligent search
-- optionally support a RAG-style assistant
+- Powerd a RAG-style assistant
 
 ## Phase Roadmap
 
@@ -70,13 +70,13 @@ pip install -r requirements.txt
 
 ## Dataset Placement
 
-Put the downloaded CFPB CSV file here:
+Place the downloaded CFPB CSV file in:
 
 ```text
 data/raw/
 ```
 
-The default config looks for:
+The default config expects:
 
 ```text
 data/raw/complaints.csv
@@ -84,14 +84,14 @@ data/raw/complaints.csv
 
 ## Balanced Sample
 
-To create a balanced 90k-row sample with 15k complaint narratives per product:
+Create a random balanced 90k-row sample with 15k complaint narratives per target product:
 
 ```bash
 source ticket/bin/activate
 python -m src.data.create_balanced_sample
 ```
 
-The sample is saved here:
+The sampled file is written to:
 
 ```text
 data/processed/cfpb_sample_90k.csv
@@ -99,26 +99,26 @@ data/processed/cfpb_sample_90k.csv
 
 ## Phase 1: NLP EDA + Preprocessing
 
-To create the cleaned dataset with text columns for transformers and baseline ML:
+Generate the cleaned dataset with both transformer-safe and classical-ML text columns:
 
 ```bash
 source ticket/bin/activate
 python -m src.preprocessing.build_preprocessed_dataset
 ```
 
-To create the EDA report and charts:
+Generate the EDA report and figures:
 
 ```bash
 python -m src.data.phase1_eda_report
 ```
 
-Notebook:
+Open the notebook:
 
 ```text
 notebooks/01_nlp_eda_preprocessing.ipynb
 ```
 
-Phase 1 files:
+Phase 1 outputs:
 
 ```text
 data/processed/cfpb_sample_90k_clean.csv
@@ -128,25 +128,25 @@ artifacts/figures/
 
 ## Phase Pipelines
 
-Phase scripts live here:
+End-to-end phase workflows live in:
 
 ```text
 src/pipelines/
 ```
 
-Phase 0 sampling:
+Run Phase 0 balanced sampling:
 
 ```bash
 python -m src.pipelines.phase0_create_sample
 ```
 
-Phase 1 preprocessing and EDA:
+Run Phase 1 preprocessing and EDA:
 
 ```bash
 python -m src.pipelines.phase1_preprocess_and_eda
 ```
 
-Phase 2 script:
+Phase 2 has a pipeline scaffold ready at:
 
 ```text
 src/pipelines/phase2_train_baselines.py
@@ -154,14 +154,14 @@ src/pipelines/phase2_train_baselines.py
 
 ## Phase 2: Baseline Models
 
-To train and evaluate the baseline NLP models:
+Train and evaluate traditional NLP classifiers:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase2_train_baselines
 ```
 
-Phase 2 files:
+Phase 2 outputs:
 
 ```text
 artifacts/models/*.joblib
@@ -175,28 +175,28 @@ notebooks/02_baseline_models.ipynb
 
 ## Phase 3: Transformer Fine-Tuning
 
-Fine-tune DistilBERT for complaint classification. On this machine, MPS can be used when the run has normal local access.
+Fine-tune DistilBERT for complaint classification. On this machine, MPS acceleration is available when running outside the restricted sandbox.
 
-Pilot run used for the current saved results:
+Pilot run used for the current artifacts:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase3_finetune_transformer --max-samples-per-class 1000 --epochs 1 --train-batch-size 8 --eval-batch-size 16
 ```
 
-BERT pilot run, with smaller batches because BERT is larger:
+BERT pilot comparison, using smaller batches because BERT is larger:
 
 ```bash
 python -m src.pipelines.phase3_finetune_transformer --model-name bert-base-uncased --max-samples-per-class 1000 --epochs 1 --train-batch-size 4 --eval-batch-size 8
 ```
 
-Full 90k-row DistilBERT run for a fairer comparison with the baseline models:
+Full 90k-row DistilBERT run when you want the proper baseline comparison:
 
 ```bash
 python -m src.pipelines.phase3_finetune_transformer --full-dataset --epochs 2 --train-batch-size 8 --eval-batch-size 16
 ```
 
-Phase 3 files:
+Phase 3 outputs:
 
 ```text
 artifacts/models/distilbert_complaint_classifier/
@@ -212,20 +212,20 @@ notebooks/03_transformer_finetuning.ipynb
 
 ## Phase 4: Embeddings + Semantic Search
 
-To build SBERT embeddings for complaint search:
+Build SBERT embeddings for semantic complaint retrieval:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase4_build_embeddings --full-dataset --batch-size 64
 ```
 
-Search with the NumPy version:
+Run a semantic search query with the NumPy baseline retriever:
 
 ```bash
 python -m src.retrieval.semantic_search --query "My account was charged twice" --top-k 5
 ```
 
-Phase 4 files:
+Phase 4 outputs:
 
 ```text
 artifacts/embeddings/complaint_embeddings_all_minilm_l6_v2_full.npy
@@ -237,26 +237,26 @@ notebooks/04_embeddings_semantic_search.ipynb
 
 ## Phase 5: Vector Database System
 
-To build the FAISS index for the full 90k SBERT embeddings and compare it with NumPy search:
+Build a FAISS vector index over the full 90k SBERT embeddings and benchmark it against the NumPy baseline:
 
 ```bash
 source ticket/bin/activate
 python -m src.pipelines.phase5_build_vector_index
 ```
 
-Search with FAISS:
+Run semantic search through FAISS:
 
 ```bash
 python -m src.retrieval.faiss_search --query "My account was charged twice" --top-k 5
 ```
 
-Optional: build an approximate HNSW index for larger datasets:
+Build an approximate HNSW index when scaling beyond the current 90k rows:
 
 ```bash
 python -m src.retrieval.faiss_vector_store --index-type hnsw_ip
 ```
 
-Phase 5 files:
+Phase 5 outputs:
 
 ```text
 artifacts/vector_indexes/faiss_flat_ip_all_minilm_l6_v2_full.index
@@ -268,7 +268,7 @@ notebooks/05_vector_database_faiss.ipynb
 
 ## Phase 6: Summarization
 
-To summarize long complaint narratives with a pretrained seq2seq model:
+Generate executive summaries for long complaint narratives with a pretrained sequence-to-sequence transformer:
 
 ```bash
 source ticket/bin/activate
@@ -287,7 +287,7 @@ Summarize custom text:
 python -m src.summarization.complaint_summarizer --text "My bank charged me twice and has not refunded the duplicate charge." --local-files-only
 ```
 
-Phase 6 files:
+Phase 6 outputs:
 
 ```text
 artifacts/summarization/models/
@@ -298,7 +298,7 @@ notebooks/06_complaint_summarization.ipynb
 
 ## Phase 7: RAG-Style Retrieval
 
-This phase builds a retrieval-grounded assistant without a paid LLM. It retrieves similar complaints, builds a small context, adds confidence, and cites complaint IDs.
+Generate retrieval-grounded answers without a paid LLM. The system retrieves similar complaints, builds context, adds confidence, and cites complaint IDs.
 
 Run the example queries:
 
@@ -313,14 +313,14 @@ Ask one question:
 python -m src.rag.retrieval_assistant --query "My bank charged me twice for the same transaction" --top-k 5
 ```
 
-Use metadata filters when the product, company, issue, or state is already known:
+Use metadata filters when product, company, issue, or state is already known:
 
 ```bash
 python -m src.rag.retrieval_assistant --query "My account was charged twice" --product "Checking or savings account" --top-k 5
 python -m src.rag.retrieval_assistant --query "Debt collector keeps calling me" --company "ENCORE CAPITAL GROUP INC." --top-k 5
 ```
 
-Phase 7 files:
+Phase 7 outputs:
 
 ```text
 src/rag/context_builder.py
@@ -366,7 +366,7 @@ curl -X POST http://127.0.0.1:8000/rag \
   -d '{"query":"My account was charged twice","top_k":3,"filters":{"product":"Checking or savings account"}}'
 ```
 
-Phase 8 files:
+Phase 8 outputs:
 
 ```text
 src/api/main.py
@@ -400,3 +400,88 @@ http://127.0.0.1:8501
 ```
 
 The UI calls the API and supports classification, semantic search, retrieval-grounded answers, summarization, metadata filters, and combined analysis.
+
+## Phase 9: Dockerization
+
+Build and run the API and UI with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+```text
+API docs: http://127.0.0.1:8000/docs
+UI:       http://127.0.0.1:8501
+```
+
+The containers keep large local files out of the image. `docker-compose.yml` mounts these folders at runtime:
+
+```text
+./artifacts -> /app/artifacts
+./data      -> /app/data
+```
+
+The API image uses CPU-only PyTorch so Docker does not pull unnecessary CUDA packages.
+
+Phase 9 outputs:
+
+```text
+Dockerfile.api
+Dockerfile.ui
+docker-compose.yml
+.dockerignore
+docker/requirements-api.txt
+docker/requirements-ui.txt
+```
+
+Useful Docker commands:
+
+```bash
+docker compose ps
+docker compose logs api --tail=100
+docker compose down
+```
+
+## Phase 10: MLflow + Experiment Tracking
+
+Log the completed experiments into MLflow using the reports and artifacts already created in earlier phases:
+
+```bash
+source ticket/bin/activate
+python -m src.pipelines.phase10_track_experiments
+```
+
+Open the MLflow UI:
+
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+Phase 10 tracks:
+
+```text
+baseline model metrics and artifacts
+transformer classifier metrics and artifacts
+FAISS retrieval benchmark metrics
+summarization sample metrics
+retrieval-context examples
+```
+
+Phase 10 outputs:
+
+```text
+src/tracking/mlflow_utils.py
+src/pipelines/phase10_track_experiments.py
+notebooks/10_mlflow_tracking.ipynb
+mlflow.db
+mlruns/
+artifacts/reports/phase10_mlflow_tracking_report.md
+```
