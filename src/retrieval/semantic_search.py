@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer
 
-from src.utils.config import project_path
+from src.utils.config import portable_project_path, project_path
 
 
 DEFAULT_MANIFEST = project_path("artifacts/embeddings/latest_embedding_manifest.json")
@@ -48,11 +48,14 @@ def load_manifest(path: Path) -> dict:
 def search(query: str, top_k: int, manifest_path: Path = DEFAULT_MANIFEST) -> pd.DataFrame:
     manifest_path = resolve_path(manifest_path)
     manifest = load_manifest(manifest_path)
-    embeddings = np.load(manifest["embedding_path"])
-    metadata = pd.read_csv(manifest["metadata_path"], low_memory=False)
+    embedding_path = portable_project_path(manifest["embedding_path"])
+    metadata_path = portable_project_path(manifest["metadata_path"])
+    embeddings = np.load(embedding_path)
+    metadata = pd.read_csv(metadata_path, low_memory=False)
 
-    model_source = manifest.get("model_cache_path", manifest["model_name"])
-    local_only = Path(str(model_source)).exists()
+    model_source_path = portable_project_path(manifest.get("model_cache_path"))
+    model_source = str(model_source_path) if model_source_path else manifest["model_name"]
+    local_only = Path(model_source).exists()
     model = SentenceTransformer(model_source, device=detect_device(), local_files_only=local_only)
     query_embedding = model.encode(
         [query],

@@ -1,0 +1,23 @@
+.git
+.gitignore
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Local environments
+ticket/
+.venv/
+venv/
+
+# Large local data/model outputs. Mounted by docker-compose instead.
+data/raw/*
+data/processed/*.csv
+artifacts/
+mlruns/
+
+# Local-only files
+.env

@@ -13,7 +13,7 @@ import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer
 
-from src.utils.config import project_path
+from src.utils.config import portable_project_path, project_path
 
 
 DEFAULT_MANIFEST = project_path("artifacts/vector_indexes/latest_faiss_manifest.json")
@@ -48,22 +48,25 @@ def load_manifest(path: Path) -> dict:
 
 
 def load_sentence_model(manifest: dict) -> SentenceTransformer:
-    model_source = manifest.get("model_cache_path") or manifest["model_name"]
-    local_only = Path(str(model_source)).exists()
+    model_source_path = portable_project_path(manifest.get("model_cache_path"))
+    model_source = str(model_source_path) if model_source_path else manifest["model_name"]
+    local_only = Path(model_source).exists()
     return SentenceTransformer(model_source, device=detect_device(), local_files_only=local_only)
 
 
 @lru_cache(maxsize=2)
 def load_search_resources(manifest_path: str):
     manifest = load_manifest(Path(manifest_path))
-    metadata = pd.read_csv(manifest["metadata_path"], low_memory=False)
+    metadata_path = portable_project_path(manifest["metadata_path"])
+    metadata = pd.read_csv(metadata_path, low_memory=False)
     model = load_sentence_model(manifest)
 
     # Import FAISS after SentenceTransformer loads. On this Mac setup,
     # loading FAISS first caused native crashes in a few test runs.
     import faiss
 
-    index = faiss.read_index(manifest["index_path"])
+    index_path = portable_project_path(manifest["index_path"])
+    index = faiss.read_index(str(index_path))
     return manifest, metadata, model, index
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from src.utils.config import project_path
+from src.utils.config import portable_project_path, project_path
 
 
 DEFAULT_EMBEDDING_MANIFEST = project_path("artifacts/embeddings/latest_embedding_manifest.json")
@@ -76,7 +76,7 @@ def build_faiss_index(config: FaissIndexConfig) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     embedding_manifest = load_json(embedding_manifest_path)
-    embedding_path = Path(embedding_manifest["embedding_path"])
+    embedding_path = portable_project_path(embedding_manifest["embedding_path"])
     if not embedding_path.exists():
         raise FileNotFoundError(f"Embedding file not found: {embedding_path}")
 

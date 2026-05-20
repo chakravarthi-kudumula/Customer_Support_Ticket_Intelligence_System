@@ -13,7 +13,7 @@ import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer
 
-from src.utils.config import project_path
+from src.utils.config import portable_project_path, project_path
 
 
 DEFAULT_EMBEDDING_MANIFEST = project_path("artifacts/embeddings/latest_embedding_manifest.json")
@@ -157,7 +157,7 @@ def run_benchmark(
     embedding_manifest = load_json(resolve_path(embedding_manifest_path))
     faiss_manifest = load_json(resolve_path(faiss_manifest_path))
 
-    embeddings = np.load(embedding_manifest["embedding_path"]).astype("float32", copy=False)
+    embeddings = np.load(portable_project_path(embedding_manifest["embedding_path"])).astype("float32", copy=False)
     embeddings = np.ascontiguousarray(embeddings)
     model = load_sentence_model(faiss_manifest)
 
@@ -171,7 +171,7 @@ def run_benchmark(
     # loading FAISS first caused native crashes in a few test runs.
     import faiss
 
-    index = faiss.read_index(faiss_manifest["index_path"])
+    index = faiss.read_index(str(portable_project_path(faiss_manifest["index_path"])))
     rows = [
         benchmark_query(query, query_embedding, embeddings, index, top_k, repeat)
         for query, query_embedding in zip(DEFAULT_QUERIES, query_embeddings)

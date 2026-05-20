@@ -27,3 +27,22 @@ def project_path(relative_path: str | Path) -> Path:
     """Resolve a path relative to the project root."""
     return PROJECT_ROOT / relative_path
 
+
+def portable_project_path(path_value: str | Path | None) -> Path | None:
+    """Resolve project artifact/data paths that may come from another machine."""
+    if path_value is None:
+        return None
+
+    path = Path(path_value)
+    if path.exists():
+        return path
+
+    path_text = str(path_value)
+    for folder in ("artifacts", "data", "configs"):
+        marker = f"/{folder}/"
+        if marker in path_text:
+            suffix = path_text.split(marker, 1)[1]
+            return project_path(Path(folder) / suffix)
+
+    return path
+
