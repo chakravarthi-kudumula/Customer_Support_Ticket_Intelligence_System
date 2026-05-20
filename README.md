@@ -483,5 +483,4 @@ src/pipelines/phase10_track_experiments.py
 notebooks/10_mlflow_tracking.ipynb
 mlflow.db
 mlruns/
-artifacts/reports/phase10_mlflow_tracking_report.md
 ```
