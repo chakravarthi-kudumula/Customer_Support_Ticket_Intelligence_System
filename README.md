@@ -110,6 +110,121 @@ flowchart TD
     N --> N3["Tracked Items<br/>params<br/>metrics<br/>model artifacts<br/>reports"]
 ```
 
+## System Architecture
+
+```mermaid
+flowchart LR
+    subgraph DataLayer["Data + Artifact Layer"]
+        RAW["Raw CFPB CSV<br/>data/raw/complaints.csv"]
+        CLEAN["Processed 90k Dataset<br/>data/processed/cfpb_sample_90k_clean.csv"]
+        MODELS["Model Artifacts<br/>artifacts/models/"]
+        EMB["SBERT Embeddings<br/>artifacts/embeddings/"]
+        FAISSIDX["FAISS Index<br/>artifacts/vector_indexes/"]
+        REPORTS["Reports + Figures<br/>artifacts/reports/<br/>artifacts/figures/"]
+    end
+
+    subgraph OfflineLayer["Offline Training + Batch Pipelines"]
+        SAMPLE["Balanced Sampling<br/>15k rows x 6 products"]
+        PREP["EDA + Preprocessing<br/>text_ml_clean<br/>text_transformer"]
+        BASELINE["Baseline ML<br/>TF-IDF / BoW<br/>Logistic Regression / Linear SVM"]
+        TRANSFORMER["Transformer Classifier<br/>DistilBERT / BERT<br/>PyTorch + Hugging Face"]
+        EMBEDPIPE["Embedding Builder<br/>Sentence Transformers<br/>all-MiniLM-L6-v2"]
+        INDEXPIPE["Vector Index Builder<br/>FAISS IndexFlatIP"]
+        SUMPIPE["Summarization Setup<br/>DistilBART"]
+    end
+
+    subgraph IntelligenceLayer["Runtime Intelligence Layer"]
+        CLASSIFY["Classification<br/>Complaint -> Product"]
+        SEARCH["Semantic Search<br/>Query -> Similar Complaints"]
+        RAG["Retrieval-Grounded Answer<br/>context + citations + outcomes"]
+        SUMMARIZE["Summarization<br/>Long Complaint -> Executive Summary"]
+    end
+
+    subgraph ApiLayer["FastAPI Service Layer"]
+        API["FastAPI App<br/>src/api/main.py"]
+        HEALTH["GET /health"]
+        META["GET /metadata"]
+        EPCLASSIFY["POST /classify"]
+        EPSEARCH["POST /search"]
+        EPRAG["POST /rag"]
+        EPSUM["POST /summarize"]
+        EPANALYZE["POST /analyze"]
+    end
+
+    subgraph UiLayer["Application UI"]
+        UI["Streamlit App<br/>app/streamlit_app.py"]
+        USER["Support Analyst / User"]
+    end
+
+    subgraph DeploymentLayer["Deployment Layer"]
+        DOCKERAPI["Dockerfile.api<br/>FastAPI backend"]
+        DOCKERUI["Dockerfile.ui<br/>Streamlit frontend"]
+        COMPOSE["docker-compose.yml<br/>api + ui"]
+        VOLUMES["Mounted Runtime Volumes<br/>./data -> /app/data<br/>./artifacts -> /app/artifacts"]
+    end
+
+    subgraph TrackingLayer["Experiment Tracking"]
+        MLFLOW["MLflow<br/>sqlite:///mlflow.db"]
+        MLRUNS["Artifact Store<br/>mlruns/"]
+    end
+
+    RAW --> SAMPLE
+    SAMPLE --> CLEAN
+    CLEAN --> PREP
+    PREP --> REPORTS
+
+    CLEAN --> BASELINE
+    BASELINE --> MODELS
+    BASELINE --> REPORTS
+
+    CLEAN --> TRANSFORMER
+    TRANSFORMER --> MODELS
+    TRANSFORMER --> REPORTS
+
+    CLEAN --> EMBEDPIPE
+    EMBEDPIPE --> EMB
+
+    EMB --> INDEXPIPE
+    INDEXPIPE --> FAISSIDX
+    INDEXPIPE --> REPORTS
+
+    CLEAN --> SUMPIPE
+    SUMPIPE --> REPORTS
+
+    MODELS --> CLASSIFY
+    EMB --> SEARCH
+    FAISSIDX --> SEARCH
+    SEARCH --> RAG
+    CLEAN --> SUMMARIZE
+
+    CLASSIFY --> API
+    SEARCH --> API
+    RAG --> API
+    SUMMARIZE --> API
+
+    API --> HEALTH
+    API --> META
+    API --> EPCLASSIFY
+    API --> EPSEARCH
+    API --> EPRAG
+    API --> EPSUM
+    API --> EPANALYZE
+
+    USER --> UI
+    UI --> API
+
+    DOCKERAPI --> COMPOSE
+    DOCKERUI --> COMPOSE
+    VOLUMES --> COMPOSE
+    COMPOSE --> API
+    COMPOSE --> UI
+
+    REPORTS --> MLFLOW
+    MODELS --> MLFLOW
+    MLFLOW --> MLRUNS
+```
+
+
 ## Setup
 
 Create and activate the virtual environment:
